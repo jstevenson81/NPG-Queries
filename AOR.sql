@@ -1,0 +1,34 @@
+SELECT papf.person_number                                                                                PERSON_NUMBER,
+       (SELECT DISTINCT FULL_NAME
+        FROM PER_PERSON_NAMES_F PER
+        WHERE PER.PERSON_ID = AOR.PERSON_ID
+          AND NAME_TYPE = 'GLOBAL')                                                                      PERSON_NAME,
+       AOR.RESPONSIBILITY_NAME,
+       TO_CHAR(AOR.START_DATE, 'DD-MON-YYYY', 'NLS_DATE_LANGUAGE = AMERICAN')                            START_DATE,
+       TO_CHAR(AOR.END_DATE, 'DD-MON-YYYY', 'NLS_DATE_LANGUAGE = AMERICAN')                              END_DATE,
+       AOR.RESPONSIBILITY_TYPE,
+       AOR.STATUS,
+       (SELECT NAME FROM HR_ALL_ORGANIZATION_UNITS HOU WHERE HOU.ORGANIZATION_ID = AOR.BUSINESS_UNIT_ID) BUSINESS_UNIT,
+       (SELECT NAME FROM HR_ALL_ORGANIZATION_UNITS HOU WHERE HOU.ORGANIZATION_ID = AOR.LEGAL_ENTITY_ID)  LEGAL_ENTITY,
+       (SELECT NAME FROM HR_ALL_ORGANIZATION_UNITS HOU WHERE HOU.ORGANIZATION_ID = AOR.ORGANIZATION_ID)  DEPARTMENT,
+       (SELECT LOCATION_NAME FROM HR_LOCATIONS HL WHERE HL.LOCATION_ID = AOR.LOCATION_ID)                LOCATION,
+       (SELECT DISTINCT NAME FROM HR_ALL_POSITIONS_F_VL PP WHERE PP.POSITION_ID = AOR.POSITION_ID)       POSITION,
+       (SELECT DISTINCT NAME FROM PER_JOBS_F_TL PJ WHERE PJ.JOB_ID = AOR.JOB_ID)                         JOB,
+       (SELECT DISTINCT NAME FROM PER_GRADES_F_TL PG WHERE PG.GRADE_ID = AOR.GRADE_ID)                   GRADE,
+       AOR.ASSIGNMENT_CATEGORY,
+       (SELECT PAY.PAYROLL_NAME
+        FROM PAY_ALL_PAYROLLS_F PAY
+        WHERE PAY.PAYROLL_ID = AOR.PAYROLL_ID
+          AND TRUNC(SYSDATE) BETWEEN PAY.EFFECTIVE_START_DATE AND PAY.EFFECTIVE_END_DATE)                PAYROLL,
+       (SELECT NAME
+        FROM PER_LEGISLATIVE_DATA_GROUPS_VL PLD
+        WHERE PLD.LEGISLATIVE_DATA_GROUP_ID = AOR.LEGISLATIVE_DATA_GROUP_ID)                             LEGISLATIVE_DATA_GROUP,
+       pu.username                                                                                       USER_NAME
+FROM PER_ASG_RESPONSIBILITIES AOR,
+     per_all_people_f papf,
+     per_users pu
+where 1 = 1
+  and AOR.person_id = papf.person_id
+  and aor.person_id = pu.person_id
+  and pu.username = NVL(:xdo_user_name, pu.username)
+  and upper(AOR.RESPONSIBILITY_TYPE) IN (UPPER(NVL(:resp_type, aor.RESPONSIBILITY_TYPE)))
